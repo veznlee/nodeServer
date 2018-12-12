@@ -12,7 +12,7 @@ const UPLOAD_PATH = './uploads';
 var upload = multer({ dest: UPLOAD_PATH });
 
 var hostName = '127.0.0.1';
-var port = 1024;
+var port = 80;
 
 app.use(bodyParser.json()); // 解析json application/json
 /* 
@@ -24,6 +24,7 @@ app.use(bodyParser.urlencoded({ extended: true }));// 解析表单 application/x
 // app.use()用于在访问到最终目标之前做一些事情
 app.use(function (req,res,next) {//不调用next就不继续往下走
     console.log("请求来啦，在处理之前刷一下存在感");
+    //console.log(req);
     next();
 });
 
@@ -31,7 +32,7 @@ app.use(function (req,res,next) {//不调用next就不继续往下走
 //all表示所有的方法，*表示所有的路径，一般放到最后
 app.all('*', function(req, res, next) {  
     res.header("Access-Control-Allow-Origin", "*");  
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");  
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     res.header("Access-Control-Allow-Methods","PUT,POST,GET,DELETE,OPTIONS");  
     res.header("X-Powered-By",' 3.2.1')  
     res.header("Content-Type", "application/json;charset=utf-8");  
@@ -113,6 +114,34 @@ app.post('/json', function(req, res) {
     });
 });
 
+
+//读取文件返回json
+app.post('/doubanmovie', function(req, res) {
+    //文件路径，__dirname为当前运行js文件的目录
+    //var path = path.join(__dirname, 'file/test.json');
+    var path="./file/douban.json";
+
+    var params = req.body;
+    console.log(params);
+    var page = params.pageNo || 1;
+    var pageSize = params.pageSize || 5;
+    console.log(pageSize);
+    fs.readFile(path,'utf8',function(err, data){
+        if(err){
+            res.send("文件不存在！");
+        }else{
+            var dataObj = JSON.parse(data);
+            var start = (page-1) * pageSize;
+            if(start < dataObj.total){
+                dataObj.subjects = dataObj.subjects.slice(start,start+pageSize);
+            }else{
+                dataObj.subjects = [];
+            };
+            dataObj.count = dataObj.subjects.length;
+            res.send(dataObj);
+        } 
+    });
+});
 /* 
 //单个文件上传
 app.post('/upload', upload.single('fileUpload'), function (req, res, next) {
